@@ -1,5 +1,5 @@
 const { DataTypes } = require('sequelize');
-const sequelize = require('../server');
+const sequelize = require('../connection');
 const Order = require('./Order');
 const Product = require('./Product');
 

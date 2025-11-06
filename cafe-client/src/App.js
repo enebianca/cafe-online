@@ -1,5 +1,11 @@
 import React from "react";
-import { BrowserRouter as Router, Routes, Route, Link, useNavigate } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Link,
+  useNavigate,
+} from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { logout } from "./store/reducers/globalSlice";
 
@@ -10,7 +16,7 @@ import Register from "./pages/Register";
 import Orders from "./pages/Orders";
 import PrivateRoute from "./components/PrivateRoute";
 import AddProduct from "./pages/AddProduct";
-
+import AdminOrders from "./pages/AdminOrders"; // ✅ import nou
 
 function App() {
   const dispatch = useDispatch();
@@ -24,30 +30,67 @@ function App() {
 
   return (
     <>
-      <nav style={{ padding: "10px", background: "#f7f7f7" }}>
-        <Link to="/login" style={{ margin: "10px" }}>Login</Link>
-        <Link to="/register" style={{ margin: "10px" }}>Register</Link>
-        <Link to="/products" style={{ margin: "10px" }}>Products</Link>
-        <Link to="/cart" style={{ margin: "10px" }}>Cart</Link>
-        <Link to="/orders" style={{ margin: "10px" }}>Comenzile mele</Link>
-        {/* 🔹 doar adminul vede Add Product */}
-  {role === "admin" && (
-    <Link to="/add-product" style={{ margin: "10px", color: "#3e2723", fontWeight: "bold" }}>
-      Add Product
-    </Link>
-  )}
+      <nav
+        style={{
+          padding: "10px",
+          background: "#f7f7f7",
+          display: "flex",
+          alignItems: "center",
+        }}
+      >
+        <Link to="/login" style={{ margin: "10px" }}>
+          Login
+        </Link>
+        <Link to="/register" style={{ margin: "10px" }}>
+          Register
+        </Link>
+        <Link to="/products" style={{ margin: "10px" }}>
+          Products
+        </Link>
+        <Link to="/cart" style={{ margin: "10px" }}>
+          Cart
+        </Link>
+        <Link to="/orders" style={{ margin: "10px" }}>
+          Comenzile mele
+        </Link>
+
+        {/* 🔹 doar adminul vede Add Product și Admin Orders */}
+        {role === "admin" && (
+          <>
+            <Link
+              to="/add-product"
+              style={{
+                margin: "10px",
+                color: "#3e2723",
+                fontWeight: "bold",
+              }}
+            >
+              Add Product
+            </Link>
+            <Link
+              to="/admin/orders"
+              style={{
+                margin: "10px",
+                color: "#3e2723",
+                fontWeight: "bold",
+              }}
+            >
+              Admin Orders
+            </Link>
+          </>
+        )}
 
         {loggedIn && (
           <button
             onClick={handleLogout}
             style={{
-              marginLeft: "20px",
+              marginLeft: "auto",
               background: "#3b2a23",
               color: "white",
               border: "none",
               borderRadius: "5px",
               padding: "5px 10px",
-              cursor: "pointer"
+              cursor: "pointer",
             }}
           >
             Logout
@@ -60,6 +103,7 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/products" element={<Product />} />
         <Route path="/cart" element={<Cart />} />
+
         <Route
           path="/orders"
           element={
@@ -68,7 +112,15 @@ function App() {
             </PrivateRoute>
           }
         />
-        <Route path="/add-product" element={<AddProduct />} />
+
+        {/* 🔹 doar adminul accesează AddProduct și AdminOrders */}
+        {role === "admin" && (
+          <>
+            <Route path="/add-product" element={<AddProduct />} />
+            <Route path="/admin/orders" element={<AdminOrders />} />
+          </>
+        )}
+
         <Route path="/" element={<Product />} />
       </Routes>
     </>

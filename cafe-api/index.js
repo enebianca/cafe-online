@@ -33,6 +33,6 @@ require('./database/models/Order');
 require('./database/models/OrderItem');
 
 // sincronizare DB și pornire server
-sequelize.sync({ alter: true }).then(() => {
+sequelize.sync().then(() => {
   app.listen(PORT, () => console.log(`✅ Server pornit pe portul ${PORT}`));
 });

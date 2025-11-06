@@ -44,4 +44,46 @@ router.get('/', verifyToken, async (req, res) => {
   res.json(orders);
 });
 
+// 🔹 Vizualizare toate comenzile (ADMIN ONLY)
+router.get('/all', verifyToken, async (req, res) => {
+  try {
+    // doar adminul poate accesa
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Acces interzis' });
+    }
+
+    const orders = await Order.findAll({
+      include: [
+        { model: OrderItem, include: [Product] },
+      ],
+      order: [['createdAt', 'DESC']],
+    });
+
+    res.json(orders);
+  } catch (err) {
+    console.error('Eroare la preluarea comenzilor admin:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+// 🔹 Actualizare status comandă (ADMIN ONLY)
+router.put('/:id/status', verifyToken, async (req, res) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Acces interzis' });
+    }
+
+    const { status } = req.body;
+    const order = await Order.findByPk(req.params.id);
+
+    if (!order) return res.status(404).json({ message: 'Comandă inexistentă' });
+
+    order.status = status;
+    await order.save();
+
+    res.json({ message: 'Status actualizat cu succes', order });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;
