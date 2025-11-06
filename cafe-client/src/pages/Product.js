@@ -5,10 +5,20 @@ import { addToCart } from "../store/reducers/cartSlice";
 
 export default function Product() {
   const [products, setProducts] = useState([]);
+  const [editingProduct, setEditingProduct] = useState(null);
+  const [notification, setNotification] = useState(""); // ✅ notificare
+  const [formData, setFormData] = useState({
+    name: "",
+    description: "",
+    price: "",
+    stock: "",
+    imageUrl: "",
+  });
+
   const dispatch = useDispatch();
   const { role, token } = useSelector((state) => state.global);
 
-  // 🔹 încarcă produsele
+  // 🔹 Fetch produse
   useEffect(() => {
     axios
       .get(`${process.env.REACT_APP_API_URL}/products`)
@@ -16,7 +26,19 @@ export default function Product() {
       .catch((err) => console.error(err));
   }, []);
 
-  // 🔹 ștergere produs (doar admin)
+  // 🔹 Notificare temporară
+  const showNotification = (text) => {
+    setNotification(text);
+    setTimeout(() => setNotification(""), 2000);
+  };
+
+  // 🔹 Adaugă produs în coș
+  const handleAddToCart = (p) => {
+    dispatch(addToCart(p));
+    showNotification(`✅ ${p.name} a fost adăugat în coș!`);
+  };
+
+  // 🔹 Ștergere produs
   const handleDelete = async (id) => {
     if (window.confirm("Ești sigur că vrei să ștergi acest produs?")) {
       try {
@@ -24,25 +46,41 @@ export default function Product() {
           headers: { Authorization: `Bearer ${token}` },
         });
         setProducts(products.filter((p) => p.id !== id));
+        showNotification("🗑️ Produs șters cu succes!");
       } catch (err) {
         alert("Eroare la ștergere produs");
       }
     }
   };
 
-  // 🔹 editare rapidă (prompt)
-  const handleEdit = async (id) => {
-    const newName = prompt("Noul nume al produsului:");
-    if (!newName) return;
+  // 🔹 Deschide modal editare
+  const openEditModal = (product) => {
+    setEditingProduct(product);
+    setFormData({
+      name: product.name,
+      description: product.description || "",
+      price: product.price,
+      stock: product.stock,
+      imageUrl: product.imageUrl || "",
+    });
+  };
+
+  // 🔹 Salvare modificări
+  const handleSaveEdit = async () => {
     try {
       await axios.put(
-        `${process.env.REACT_APP_API_URL}/products/${id}`,
-        { name: newName },
+        `${process.env.REACT_APP_API_URL}/products/${editingProduct.id}`,
+        formData,
         { headers: { Authorization: `Bearer ${token}` } }
       );
+
       setProducts(
-        products.map((p) => (p.id === id ? { ...p, name: newName } : p))
+        products.map((p) =>
+          p.id === editingProduct.id ? { ...p, ...formData } : p
+        )
       );
+      setEditingProduct(null);
+      showNotification("✅ Produs actualizat cu succes!");
     } catch (err) {
       alert("Eroare la actualizarea produsului");
     }
@@ -102,6 +140,9 @@ export default function Product() {
             />
 
             <h3 style={{ color: "#3e2723", marginBottom: "8px" }}>{p.name}</h3>
+            <p style={{ color: "#6d4c41", marginBottom: "10px" }}>
+              {p.description}
+            </p>
             <p
               style={{
                 color: "#4e342e",
@@ -116,7 +157,7 @@ export default function Product() {
               <p style={{ color: "red", fontWeight: "bold" }}>Stoc epuizat</p>
             ) : (
               <button
-                onClick={() => dispatch(addToCart(p))}
+                onClick={() => handleAddToCart(p)}
                 style={{
                   background: "#3e2723",
                   color: "white",
@@ -138,11 +179,10 @@ export default function Product() {
               </button>
             )}
 
-            {/* 🔹 Acțiuni vizibile doar pentru admin */}
             {role === "admin" && (
               <div style={{ marginTop: "15px" }}>
                 <button
-                  onClick={() => handleEdit(p.id)}
+                  onClick={() => openEditModal(p)}
                   style={{
                     background: "#4CAF50",
                     color: "white",
@@ -173,6 +213,151 @@ export default function Product() {
           </div>
         ))}
       </div>
+
+      {/* 🔹 MODAL EDITARE */}
+      {editingProduct && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+            backgroundColor: "rgba(0,0,0,0.6)",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            zIndex: 1000,
+          }}
+        >
+          <div
+            style={{
+              background: "white",
+              padding: "30px",
+              borderRadius: "10px",
+              width: "400px",
+              boxShadow: "0 5px 15px rgba(0,0,0,0.3)",
+            }}
+          >
+            <h3 style={{ textAlign: "center", color: "#3e2723" }}>
+              Editează produsul
+            </h3>
+
+            <input
+              type="text"
+              placeholder="Nume"
+              value={formData.name}
+              onChange={(e) =>
+                setFormData({ ...formData, name: e.target.value })
+              }
+              style={inputStyle}
+            />
+            <textarea
+              placeholder="Descriere"
+              value={formData.description}
+              onChange={(e) =>
+                setFormData({ ...formData, description: e.target.value })
+              }
+              style={{ ...inputStyle, height: "80px" }}
+            />
+            <input
+              type="number"
+              placeholder="Preț"
+              value={formData.price}
+              onChange={(e) =>
+                setFormData({ ...formData, price: e.target.value })
+              }
+              style={inputStyle}
+            />
+            <input
+              type="number"
+              placeholder="Stoc"
+              value={formData.stock}
+              onChange={(e) =>
+                setFormData({ ...formData, stock: e.target.value })
+              }
+              style={inputStyle}
+            />
+            <input
+              type="text"
+              placeholder="Imagine URL"
+              value={formData.imageUrl}
+              onChange={(e) =>
+                setFormData({ ...formData, imageUrl: e.target.value })
+              }
+              style={inputStyle}
+            />
+
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                marginTop: "15px",
+              }}
+            >
+              <button
+                onClick={handleSaveEdit}
+                style={{
+                  background: "#4CAF50",
+                  color: "white",
+                  border: "none",
+                  padding: "10px 20px",
+                  borderRadius: "5px",
+                  cursor: "pointer",
+                }}
+              >
+                Salvează
+              </button>
+              <button
+                onClick={() => setEditingProduct(null)}
+                style={{
+                  background: "#d32f2f",
+                  color: "white",
+                  border: "none",
+                  padding: "10px 20px",
+                  borderRadius: "5px",
+                  cursor: "pointer",
+                }}
+              >
+                Anulează
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ✅ NOTIFICARE — apare jos dreapta */}
+      {notification && (
+        <div
+          style={{
+            position: "fixed",
+            bottom: "20px",
+            right: "20px",
+            background: "#3e2723",
+            color: "white",
+            padding: "10px 20px",
+            borderRadius: "8px",
+            fontWeight: "bold",
+            boxShadow: "0 3px 8px rgba(0,0,0,0.3)",
+            opacity: notification ? 1 : 0,
+            transform: notification
+              ? "translateY(0)"
+              : "translateY(20px)",
+            transition: "opacity 0.3s ease, transform 0.3s ease",
+            zIndex: 2000,
+          }}
+        >
+          {notification}
+        </div>
+      )}
     </div>
   );
 }
+
+const inputStyle = {
+  width: "100%",
+  marginTop: "10px",
+  padding: "8px",
+  borderRadius: "5px",
+  border: "1px solid #ccc",
+};
